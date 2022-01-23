@@ -36,7 +36,12 @@ Un middleware express.js para el validador.
 - Link: https://www.npmjs.com/package/express-validator
 - Homepage: https://express-validator.github.io/docs/
 
-## Recursos
+### JSON Web Token
+Esto fue desarrollado contra draft-ietf-oauth-json-web-token-08. Hace uso de node-jws.
+- Link : https://www.npmjs.com/package/jsonwebtoken
+- Homepage : https://github.com/auth0/node-jsonwebtoken#readme
+
+## Recursos | Base de datos
 
 ### MongoDB Atlas
 
@@ -56,7 +61,7 @@ Elegante modelador de objetos (ODM: Objet Data Model) mongodb para node.js. Seam
 
 - Link : https://mongoosejs.com/
 
-## Conexión con MongoDB
+### Conexión con MongoDB
 
 1. Registrarse o iniciar sesión en [MongoDB Atlas](https://account.mongodb.com/account/login)
 2. Crear un nuevo **Cluster**
@@ -100,7 +105,7 @@ const dbConnection = async () => {
     this.connectionDB();
 ```
 
-## Crear el modelo de la base de datos
+### Crear el modelo de la base de datos
 
 - Modelo Usuario:
 
@@ -146,10 +151,21 @@ const UserSchema = Schema({
 module.exports = model('User',UserSchema);
 ```
 
-## Crear un usuario en la base de datos
+### Crear un usuario en la base de datos
 
 1. **Requerir** el _modelo_ en el _controlador_: `const User = require('../models/user');`
 2. En el _método_ `usesrPost()` **crear** una instancia del modelo pasandole el body recibido por parámetro: `const user = new User(body);`
 3. **Guardar** el documento con la siguiente línea: `await user.save()`, procurando que el método sea asíncrono.
 
-## Encriptar la contraseña
+## Recursos | Autenticación - Auth - Login
+### JWT
+Los tokens web JSON son un método RFC 7519 estándar de la industria abierto para representar reclamos de forma segura entre dos partes.
+- Link : https://jwt.io/
+- Función para desencriptar JWT:
+~~~
+function parseJwt (token) {
+    var base64Url = token.split('.')[1];
+    var base64 = base64Url.replace('-', '+').replace('_', '/');
+    return JSON.parse(window.atob(base64));
+};
+~~~

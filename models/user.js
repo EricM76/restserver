@@ -33,8 +33,10 @@ const UserSchema = Schema({
 });
 
 UserSchema.methods.toJSON = function(){
-    const {__v, password, ...user} = this.toObject(); //oculta datos sensibles
+    const {__v, password, _id, ...user} = this.toObject(); //oculta datos sensibles
+    user.uid = _id; //creo una nueva propiedad solo para visualizar el id
     return user
 }
+
 
 module.exports = model('User',UserSchema);

@@ -2,7 +2,6 @@ const { response, request } = require('express');
 const bcryptjs = require('bcryptjs');
 
 const User = require('../models/user');
-const user = require('../models/user');
 
 const usersGet = async (req = request, res = response) => {
 
@@ -95,7 +94,7 @@ const usersDelete = async (req, res = response) => {
     const user = await User.findByIdAndUpdate(id,{state : false},{new:true});
 
     return res.json({
-        data: user
+        data: user,
     })
 }
 
