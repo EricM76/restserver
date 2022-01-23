@@ -24,7 +24,7 @@ const usersGet = async (req = request, res = response) => {
         })
     } catch (error) {
         console.log(error);
-        return res.status(res.statusCode || 500).json({
+        return res.status(error.statusCode || 500).json({
             ok: false,
             msg : error.message ? error.message : "Comuníquese con el administrador"
         })
