@@ -9,18 +9,27 @@ const usersGet = async (req = request, res = response) => {
     const { limit = 5, from = 0 } = req.query;
     const query = { state: true }; //solo mostrará los usuarios cuyo estado sea true
 
-    const [users, total] = await Promise.all([//Promise.all corre las promesas en simultáneo
-        User.find(query)
-            .skip(+from)
-            .limit(+limit), //parseo el limit de string a number,
-        User.countDocuments(query)
-    ]); 
-
-    return res.json({
-        ok: true,
-        total,
-        data: users
-    })
+    try {
+        const [users, total] = await Promise.all([//Promise.all corre las promesas en simultáneo
+            User.find(query)
+                .skip(+from)
+                .limit(+limit), //parseo el limit de string a number,
+            User.countDocuments(query)
+        ]); 
+    
+        return res.json({
+            ok: true,
+            total,
+            data: users
+        })
+    } catch (error) {
+        console.log(error);
+        return res.status(error.status || 500).json({
+            ok: false,
+            msg : error.message ? error.message : "Comuníquese con el administrador"
+        })
+    }
+  
 }
 
 const usersPost = async (req, res = response) => {
