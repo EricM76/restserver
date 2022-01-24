@@ -112,7 +112,7 @@ const googleSignin = async (req, res = response) => {
         console.log(error)
         return res.status(400).json({
             ok : false,
-            msg : ' Token no válido | SignIn',
+            msg : error,
         })
     }
     
