@@ -37,7 +37,9 @@ Un middleware express.js para el validador.
 - Homepage: https://express-validator.github.io/docs/
 
 ### JSON Web Token
+
 Esto fue desarrollado contra draft-ietf-oauth-json-web-token-08. Hace uso de node-jws.
+
 - Link : https://www.npmjs.com/package/jsonwebtoken
 - Homepage : https://github.com/auth0/node-jsonwebtoken#readme
 
@@ -158,14 +160,202 @@ module.exports = model('User',UserSchema);
 3. **Guardar** el documento con la siguiente línea: `await user.save()`, procurando que el método sea asíncrono.
 
 ## Recursos | Autenticación - Auth - Login
+
 ### JWT
+
 Los tokens web JSON son un método RFC 7519 estándar de la industria abierto para representar reclamos de forma segura entre dos partes.
+
 - Link : https://jwt.io/
 - Función para desencriptar JWT:
-~~~
+
+```
 function parseJwt (token) {
     var base64Url = token.split('.')[1];
     var base64 = base64Url.replace('-', '+').replace('_', '/');
     return JSON.parse(window.atob(base64));
 };
+```
+
+### Google Sign-In for Website
+
+Google Sign-In administra el flujo de OAuth 2.0 y el ciclo de vida del token, lo que simplifica su integración con las API de Google. Un usuario siempre tiene la opción de revocar el acceso a una aplicación en cualquier momento.
+
+- Documentación: https://developers.google.com/identity/sign-in/web/sign-in
+
+### Configuración Frontend
+
+1. Crear credenciales de autorización
+
+- Ir a la [Página de credenciales](https://console.cloud.google.com/apis/credentials?project=ultimate-bit-264109).
+- Haga clic en Crear credenciales> ID de cliente de OAuth.
+- Seleccione el tipo de aplicación de la **aplicación web**.
+- Nombre su cliente OAuth 2.0 y haga clic en **Crear**.
+
+2. Cargar la biblioteca de Google Platform
+
+Debe incluir la biblioteca de Google Platform en sus páginas web que integran el inicio de sesión de Google.
+
+```
+<script src="https://apis.google.com/js/platform.js" async defer></script>
+```
+
+3. Especifique el ID de cliente de su aplicación
+
+Especifique el ID de cliente que creó para su aplicación en Google Developers Console con el meta elemento google-signin-client_id .
+
+```
+<meta name="google-signin-client_id" content="YOUR_CLIENT_ID.apps.googleusercontent.com">
+```
+
+4. Agregar un botón de inicio de sesión de Google
+
+Para crear un botón de inicio de sesión de Google que utilice la configuración predeterminada, agregue un elemento div con la clase `g-signin2` a su página de inicio de sesión:
+
+```
+<div class="g-signin2" data-onsuccess="onSignIn"></div>
+```
+
+5. Obtener información de perfil
+
+Para recuperar información de perfil de un usuario, use el método `getBasicProfile()`.
+
+```
+<script>
+    function onSignIn(googleUser) {
+        var profile = googleUser.getBasicProfile();
+        console.log('ID: ' + profile.getId()); // Do not send to your backend! Use an ID token instead.
+        console.log('Name: ' + profile.getName());
+        console.log('Image URL: ' + profile.getImageUrl());
+        console.log('Email: ' + profile.getEmail()); // This is null if the 'email' scope is not present.
+    }
+</script>
+
+```
+
+_**Importante**: No utilice los ID de Google devueltos por getId() o la información del perfil del usuario para comunicar el usuario que ha getId() actualmente con su servidor backend. En su lugar, envíe tokens de identificación , que se pueden validar de forma segura en el servidor._
+
+6. Cerrar sesión como usuario
+
+Para crear un enlace de `GoogleAuth.signOut()` sesión, adjunte una función que llame al método `GoogleAuth.signOut()` al evento onclick del enlace.
+
+```
+<a href="#" onclick="signOut();">Sign out</a>
+
+<script>
+  function signOut() {
+    var auth2 = gapi.auth2.getAuthInstance();
+    auth2.signOut().then(function () {
+      console.log('User signed out.');
+    });
+  }
+</script>
+
+```
+
+### Configuraciones Backend
+
+1. Crear el método que reciba `id_token` generado por google:
+
+```
+const googleSignin = (req, res = response) => {
+
+    const {id_token} = req.body;
+
+    return res.json({
+        ok : true,
+        msg : 'Google Signin OK',
+    })
+}
+```
+
+2. Crear la ruta, preferentemente por `POST` que valide la existencia de este `id_token`
+
+```
+   .post('/google',[
+        check('id_token','El id_token es obligatorio').notEmpty(),
+        validateFiels
+    ],googleSignin)
+```
+
+3. Obtener el `id_token` y enviarlo por **fetch** al **backend**
+
+```
+ var id_token = googleUser.getAuthResponse().id_token;
+    //console.log(id_token)
+
+    try {
+
+        let response = await fetch(url, {
+            method : 'POST',
+            headers : {'Content-Type' : 'application/json'},
+            body : JSON.stringify({
+                id_token
+            })
+        })
+        let result = await response.json();
+        console.log(result)
+
+    } catch (error) {
+        console.error(error)
+    }
+```
+4. Instalar el paquete de Google para validar el _id_token_ en el **backend**: `npm install google-auth-library`
+5. Crear un **helper** que verifique la cuenta de google con el siguiente código:
 ~~~
+const {OAuth2Client} = require('google-auth-library');
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+const googleVerify = async (idToken) => {
+
+    //verificar la autenticidad del id_token
+    const ticket = await client.verifyIdToken({
+        idToken,
+        audience : process.env.GOOGLE_CLIENT_ID
+    })
+
+    //extraer los datos necesarios que provee google
+    const {name, picture : img, email} = ticket.getPayload();
+
+    //retornar los datos extraidos
+    return {
+        name,
+        img,
+        email
+    };
+
+}
+
+module.exports = {
+    googleVerify
+}
+~~~
+6. Completar el método `googleSignin` obteniendo los datos del **helper**
+~~~
+const googleSignin = async (req, res = response) => {
+
+    //recibir el id_token desde el frontend
+    const {id_token} = req.body;
+
+    try {
+
+        //recibir los datos de google
+        const googleUser = await googleVerify(id_token);
+
+        //console.log(googleUser)
+
+        return res.json({
+            ok : true,
+            msg : 'Google Signin OK',
+        })
+        
+    } catch (error) {
+        
+        return res.status(400).json({
+            ok : false,
+            msg : ' Token no válido'
+        })
+    }  
+}
+~~~
+7. 
