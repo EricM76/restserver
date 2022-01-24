@@ -358,4 +358,64 @@ const googleSignin = async (req, res = response) => {
     }  
 }
 ~~~
-7. 
+7. Guardar en la base de datos la información si el usuario no está registrado y generar el  token
+~~~
+const googleSignin = async (req, res = response) => {
+
+    //recibir el id_token desde el frontend
+    const {id_token} = req.body;
+
+    try {
+
+        //recibir los datos de google
+        const {email, name, img} = await googleVerify(id_token);
+        //console.log(googleUser)
+
+        //buscar si el email está registrado
+        let user = await User.findOne({email});
+        //console.log(user)
+
+        //crear el usuario si este no existe en la base de datos
+        if(!user){
+
+            const data = {
+                name,
+                email,
+                password : 'es indistinto!',
+                img,
+                google : true
+            }
+
+            user = new User(data);
+            await user.save()
+            
+        }
+
+        //validar que el usuario esté activo
+        if(!user.state){
+            return res.status(400).json({
+                ok: false,
+                msg : 'Usuario bloqueado, hable con el adminsitrador'
+            })
+        }
+
+        //Generar el JWT
+        const token = await jwtGenerator(user.id);
+
+        //retornar la información
+        return res.json({
+            ok : true,
+            user,
+            token
+        })
+        
+    } catch (error) {
+        console.log(error)
+        return res.status(400).json({
+            ok : false,
+            msg : ' Token no válido'
+        })
+    }
+    
+}
+~~~
