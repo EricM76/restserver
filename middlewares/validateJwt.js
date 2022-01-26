@@ -15,7 +15,6 @@ const validateJwt = async (req = request, res = response, next) => {
     try {
 
         const {uid} = jwt.verify(token,process.env.SECRETORPRIVATEKEY);
-
         const userAuth = await User.findById(uid);
 
         //verificar si el usuario no existe

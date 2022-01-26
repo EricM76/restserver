@@ -77,7 +77,7 @@ const usersPut = async (req, res = response) => {
 
     const user = await User.findByIdAndUpdate(id, rest, { new: true }); //establezco la opción new en true para recuperar la información luego de ser actualizada
 
-    return res.json({
+    return res.status(201).json({
         ok: true,
         data: user
     })
